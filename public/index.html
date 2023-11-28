@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List</title>
+  <style>
+    .completed {
+      text-decoration: line-through;
+    }
+    #taskList {
+      list-style-type: none; /* Removes bullet points */
+      padding: 0; /* Removes default padding */
+    }
+    #taskList li {
+      display: flex;
+      align-items: center; /* Vertically center the items */
+      margin-bottom: 10px; /* Space between tasks */
+    }
+    #taskList li span {
+      margin: 0 10px; /* Add some margin around the text */
+      flex-grow: 1; /* Allow the text to fill the space */
+    }
+    #taskList li input[type='radio'],
+    #taskList li button {
+      margin: 0 5px; /* Adjust the margin as needed */
+    }
+    #taskList li button {
+      padding: 5px 10px; /* Add padding to buttons */
+      cursor: pointer; /* Change cursor on hover */
+      border: 1px solid #ccc; /* Add border to the buttons */
+      background-color: #f8f8f8; /* Change button background */
+      border-radius: 4px; /* Optional: Rounded corners for buttons */
+    }
+    #taskList li button:hover {
+      background-color: #e8e8e8; /* Slightly darker on hover */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Todo List</h1>
+    <form id="todoForm">
+      <input type="text" id="newTask" placeholder="Add a new task">
+      <button type="submit">Add Task</button>
+    </form>
+    <ul id="taskList">
+      <!-- Tasks will be added here -->
+    </ul>
+  </div>
+
+  <script>
+    document.getElementById('todoForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      addTask();
+    });
+
+    function addTask() {function addTask() {
+      const newTaskDescription = document.getElementById('newTask').value;
+      if (!newTaskDescription) return;
+    
+      fetch('/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: newTaskDescription })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text(); // or response.text() if the response is not JSON
+      })
+      .then(() => {
+        document.getElementById('newTask').value = '';
+        loadTasks(); // Reload the list of tasks
+      })
+      .catch(error => console.error('Error:', error));
+    }
+    
+      const newTaskDescription = document.getElementById('newTask').value;
+      if (!newTaskDescription) return;
+
+      fetch('/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: newTaskDescription })
+      })
+      .then(response => response.json())
+      .then(() => {
+        document.getElementById('newTask').value = '';
+        loadTasks(); // Reload the list of tasks
+      })
+      .catch(error => console.error('Error:', error));
+    }
+
+    function loadTasks() {
+      fetch('/tasks')
+      .then(response => response.json())
+      .then(tasks => {
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = ''; // Clear the list
+        tasks.forEach(task => {
+          const li = document.createElement('li');
+          li.classList.add('task-item'); // Use class for styling
+
+          // Radio button for completing task
+          const completeButton = document.createElement('input');
+          completeButton.type = 'radio';
+          completeButton.checked = task.completed;
+          completeButton.addEventListener('click', () => completeTask(task.id, textSpan));
+
+          // Task text
+          const textSpan = document.createElement('span');
+          textSpan.textContent = task.description;
+          if (task.completed) {
+            textSpan.classList.add('completed');
+          }
+
+          // Edit button
+          const editButton = document.createElement('button');
+          editButton.textContent = 'Edit';
+          editButton.addEventListener('click', () => editTask(task.id, task.description));
+
+          // Delete button
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Delete';
+          deleteButton.addEventListener('click', () => deleteTask(task.id));
+
+          // Append elements in the desired order
+          li.appendChild(completeButton);
+          li.appendChild(textSpan);
+          li.appendChild(editButton);
+          li.appendChild(deleteButton);
+
+          taskList.appendChild(li);
+        });
+      })
+      .catch(error => console.error('Error:', error));
+    }
+
+    function completeTask(taskId, listItem) {
+      fetch(`/tasks/${taskId}`, { method: 'PUT' })
+        .then(() => {
+          listItem.classList.toggle('completed');
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function editTask(taskId, oldDescription) {
+      const newDescription = prompt('Edit task:', oldDescription);
+      if (newDescription === null || newDescription === oldDescription) return;
+    
+      fetch(`/tasks/edit/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: newDescription })
+      })
+      .then(response => response.json())
+      .then(() => {
+        loadTasks(); // Reload the list of tasks
+      })
+      .catch(error => console.error('Error:', error));
+    }    
+
+    function deleteTask(taskId) {
+      fetch(`/tasks/${taskId}`, { method: 'DELETE' })
+        .then(() => {
+          loadTasks(); // Reload the list of tasks
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    // Call loadTasks on page load to display all tasks
+    window.onload = loadTasks;
+  </script>
+</body>
+</html>
